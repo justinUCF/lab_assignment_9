@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 // RecordType
 struct RecordType
@@ -6,19 +7,19 @@ struct RecordType
 	int		id;
 	char	name;
 	int		order; 
-	struct RecordType *nextRecord;
+	struct RecordType *next;
 };
 
 // Fill out this structure
 struct HashType
 {
-	struct RecordType* hashArray;
+	struct RecordType* bucket[23];
 };
 
 // Compute the hash function
 int hash(int x)
 {
-	return x % 31;
+	return x % 23;
 }
 
 // parses input file to an integer array
@@ -50,7 +51,6 @@ int parseData(char* inputFileName, struct RecordType** ppData)
 			pRecord->name = c;
 			fscanf(inFile, "%d ", &n);
 			pRecord->order = n;
-			pRecord->nextRecord = NULL;
 		}
 
 		fclose(inFile);
@@ -82,7 +82,15 @@ void displayRecordsInHash(struct HashType *pHashArray, int hashSz)
 	for (i=0;i<hashSz;++i)
 	{
 		// if index is occupied with any records, print all
-
+		struct RecordType* curr = pHashArray->bucket[i];
+		if(curr != NULL){
+			printf("index %d -> ", i);
+			while(curr != NULL){
+				printf("%d, %c, %d -> ", curr->id, curr->name, curr->order);
+				curr = curr->next;
+			}
+			printf("\n");
+		}
 	}
 }
 
@@ -91,13 +99,24 @@ int main(void)
 	struct RecordType *pRecords;
 	int recordSz = 0;
 
-	recordSz = parseData("input.txt", &pRecords);
+	recordSz = parseData("input_lab_9.txt", &pRecords);
 	printRecords(pRecords, recordSz);
+
 	// Your hash implementation
-	struct HashType* hashtable = (struct HashType*)malloc(sizeof(struct HashType));
-	hashtable->hashArray = (struct RecordType*)malloc(sizeof(struct RecordType)*recordSz);
-	for(int i = 0; i < recordSz; i++){
-		int index = hash(pRecords[i].id);
-		
+	struct HashType hashArray;
+	for(int i = 0; i < 23; ++i){
+		hashArray.bucket[i] = NULL;
 	}
+
+	for(int i = 0; i < recordSz; ++i){
+		int index = hash(pRecords[i].id);
+		struct RecordType* newRecord = (struct RecordType*)malloc(sizeof(struct RecordType));
+		if(newRecord == NULL){
+			return -1;
+		}
+		*newRecord = pRecords[i];
+		newRecord->next = hashArray.bucket[index];
+		hashArray.bucket[index] = newRecord;
+	}
+	displayRecordsInHash(&hashArray, 23);
 }
